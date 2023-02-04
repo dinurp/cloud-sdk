@@ -378,15 +378,26 @@ For this guide we'll assume we want to use two services:
 
 ![Kyma Console URL](sap-btp-kyma-environment/btp-cockpit-kyma-console-url.png)
 
-2. In the Kyma dashboard, select your Kyma namespace (top right hand side of the screen), navigate to `Service Management > Catalog`, and select the `Destination` service.
+2. In the Kyma dashboard, select your Kyma namespace (top right hand side of the screen), navigate to `Service Management > Service Instances`, and click on the `+ Create Service Instance` button.
 
-![Destination Service Selection](sap-btp-kyma-environment/btp-kyma-dashboard-destination-service-selection.png)
+![Service Instance Creation](sap-btp-kyma-environment/btp-kyma-dashboard-destination-service-new.png)
 
-3. Configure your new service instance by first clicking on the `Add +` button followed by selecting both a name and a plan.
+3. Configure your new service instance by entering a name, Offering Name as `destination` and a desired plan.
 
 4. Finalize the service instance creation by confirming your configuration with a click on the `Create` button.
 
 ![Destination Service Creation](sap-btp-kyma-environment/btp-kyma-dashboard-destination-service-creation.png)
+
+5. Click on the `+ Create BTP Service Binding` button.
+
+![Service Binding Creation](sap-btp-kyma-environment/btp-kyma-dashboard-destination-binding-new.png)
+
+6. Configure your new service binding by entering a name, selecting the previously created service instance and a name for secret.
+
+7. Finalize the service binding creation by confirming your configuration with a click on the `Create` button.
+
+![Destination Binding Creation](sap-btp-kyma-environment/btp-kyma-dashboard-destination-binding-creation.png)
+
 
 <details>
   <summary>Alternative: Using Kubernetes Descriptors</summary>
@@ -395,21 +406,20 @@ For this guide we'll assume we want to use two services:
 
 ```yml title="destination-service.yaml"{8}
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceInstance
 metadata:
   name: destination-service
 spec:
-  clusterServiceClassExternalName: destination
-  clusterServicePlanExternalName: <your-desired-plan>
+  serviceOfferingName: destination
+  servicePlanName: <your-desired-plan>
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceBinding
 metadata:
   name: my-destination-service-binding
 spec:
-  instanceRef:
-    name: destination-service
+  serviceInstanceName: destination-service
   secretName: my-dest-secret
 ```
 
@@ -445,14 +455,28 @@ spec:
 
 #### Bind the XSUAA Service
 
-1. Open your Kyma dashboard (see previous section) and select the `Authorization and Trust Management Service` in `Service Managament > Catalog`:
+1. Open your Kyma dashboard, select your namespace (see previous section), navigate to `Service Management > Service Instances`, and click on the `+ Create Service Instance` button.
 
-![XSUAA Service Selection](sap-btp-kyma-environment/btp-kyma-dashboard-xsuaa-service-selection.png)
+![XSUAA Service Selection](sap-btp-kyma-environment/btp-kyma-dashboard-xsuaa-service-new.png)
 
-2. Configure your new service instance by clicking the `Add +` button and selecting both a name and a plan or your new service instance.
-   Complete the process by clicking the `Create` button.
+2. Configure your new service instance by entering a name, Offering Name as `xsuaa` and a desired plan.
+
+3. Switch to Advanced mode and enter configure an Instance Parameter xsappname with value desired app name in role configuration.
+
+4. Finalize the service instance creation by confirming your configuration with a click on the `Create` button.
 
 ![XSUAA Service Creation](sap-btp-kyma-environment/btp-kyma-dashboard-xsuaa-service-creation.png)
+
+5. Click on the `+ Create BTP Service Binding` button.
+
+![Service Binding Creation](sap-btp-kyma-environment/btp-kyma-dashboard-xsuaa-binding-new.png)
+
+6. Configure your new service binding by entering a name, selecting the previously created service instance and a name for secret.
+
+7. Finalize the service binding creation by confirming your configuration with a click on the `Create` button.
+
+![XSUAA Binding Creation](sap-btp-kyma-environment/btp-kyma-dashboard-xsuaa-binding-creation.png)
+
 
 <details>
   <summary>Alternative: Using Kubernetes Descriptors</summary>
@@ -461,21 +485,22 @@ spec:
 
 ```yml title="xsuaa-service.yaml"{8}
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceInstance
 metadata:
-  name: xsuaa-service
+  name: my-app-xsuaa-service
 spec:
-  clusterServiceClassExternalName: xsuaa
-  clusterServicePlanExternalName: <your-desired-plan>
+  serviceOfferingName: xsuaa
+  servicePlanName: <your-desired-plan>
+  parameters:
+    xsappname: <your-backend-app-name>
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceBinding
 metadata:
-  name: my-xsuaa-service-binding
+  name: my-app-xsuaa-service-binding
 spec:
-  instanceRef:
-    name: xsuaa-service
+  serviceInstanceName: my-app-xsuaa-service
   secretName: my-xsuaa-secret
 ```
 
@@ -576,18 +601,18 @@ For that, you will need to create a simple application that uses the [@sap/appro
 
 4. Follow steps similar to steps 2-3 in [Create a Kyma Deployment section](#create-a-kyma-deployment) to deploy the approuter and check if the deployment is successful.
 
-5. Update the already created XSUAA service instance with few parameters like `xsappname` and `oauth2-configuration`.
+5. Update the already created XSUAA service instance with few parameters like `oauth2-configuration`.
    This is required to provide authenticated access to backend application via the approuter.
 
 ```yml title="xsuaa-service.yaml"{9-15}
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceInstance
 metadata:
-  name: xsuaa-service
+  name: my-app-xsuaa-service
 spec:
-  clusterServiceClassExternalName: xsuaa
-  clusterServicePlanExternalName: <your-desired-plan>
+  serviceOfferingName: xsuaa
+  servicePlanName: <your-desired-plan>
   parameters:
     xsappname: <your-backend-app-name>
     oauth2-configuration:
@@ -596,13 +621,12 @@ spec:
       redirect-uris:
         - <URL-pattern-for-outside-cluster-access>
 ---
-apiVersion: servicecatalog.k8s.io/v1beta1
+apiVersion: services.cloud.sap.com/v1
 kind: ServiceBinding
 metadata:
-  name: my-xsuaa-service-binding
+  name: my-app-xsuaa-service-binding
 spec:
-  instanceRef:
-    name: xsuaa-service
+  serviceInstanceName: my-app-xsuaa-service
   secretName: my-xsuaa-secret
 ```
 
@@ -611,12 +635,13 @@ spec:
 7. Make the approuter accessible outside the cluster by creating an API rule:
 
 ```yml title="create-api-rule.yml"{4,15}
-apiVersion: gateway.kyma-project.io/v1alpha1
+apiVersion: gateway.kyma-project.io/v1beta1
 kind: APIRule
 metadata:
   name: <your-rule-name>
 spec:
   gateway: kyma-gateway.kyma-system.svc.cluster.local
+  host: <subaccount-prefix>.<URL-pattern-for-outside-cluster-access>
   rules:
     - accessStrategies:
         - config: {}
@@ -625,7 +650,6 @@ spec:
         - GET
       path: /.*
   service:
-    host: <subaccount-prefix>.<URL-pattern-for-outside-cluster-access>
     name: my-approuter
     port: 5000
 ```
